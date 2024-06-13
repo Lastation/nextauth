@@ -58,27 +58,33 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 		signIn: async ({ user, account }: { user: any; account: any }) => {
 			console.log("signIn", user, account);
 			if (account?.provider === "github") {
+				// 로직을 구현할꺼니까..
 				const { name, email } = user;
-				await connectDB();
+				await connectDB(); // mongodb 연결
 				const existingUser = await User.findOne({
-					authProviderId: user.id,
+					email,
+					authProviderId: "github",
 				});
 				if (!existingUser) {
+					// 소셜 가입
 					await new User({
 						name,
 						email,
-						authProviderId: user.id,
+						authProviderId: "github",
 						role: "user",
 					}).save();
 				}
-				const socialuser = await User.findOne({
-					authProviderId: user.id,
+				const socialUser = await User.findOne({
+					email,
+					authProviderId: "github",
 				});
-				user.role = socialuser?.role || "user";
-				user.id = socialuser?.id || null;
+				user.role = socialUser?.role || "user";
+				user.id = socialUser?._id || null;
+				return true;
+			} else {
+				// 크레덴셜 통과
 				return true;
 			}
-			return true;
 		},
 		async jwt({ token, user }: { token: any; user: any }) {
 			console.log("jwt", token, user);
